@@ -5,6 +5,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.widget.SeekBar;
 
+import com.perfectcorp.pcl199demo.utility.Log;
+
 public class MainActivity extends Activity {
     private DemoVideoView mVideoView;
     private SeekBar mVideoProgress;
@@ -43,6 +45,7 @@ public class MainActivity extends Activity {
     private SeekBar.OnSeekBarChangeListener mVideoProgressChangeListener = new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            Log.bear(progress);
             mVideoView.setPlayTime(progress * 1000);
         }
 
