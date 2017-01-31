@@ -28,12 +28,26 @@ public class DemoVideoView extends View {
 
     private EventListener mListener;
     private ValueAnimator mTimeCtrl = ValueAnimator.ofFloat(0f, 100f).setDuration(VIDEO_DURATION);
-    private DrawObject mTree1 = new DrawTree(
-            new float[] {1.0f, 0.5f},   // x values
-            new float[] {0.3f, 0.3f},   // y values
-            new float[] {0.05f, 0.05f}, // w values
-            new float[] {0.2f, 0.2f}    // h values
-    );
+    private DrawObject[] mDrawObjects = new DrawObject[] {
+            new DrawTree(
+                    new float[] {1.2f, 0.2f},   // x values
+                    new float[] {0.3f, 0.3f},   // y values
+                    new float[] {0.05f, 0.05f}, // w values
+                    new float[] {0.3f, 0.3f}    // h values
+            ),
+            new DrawTree(
+                    new float[] {1.5f, 0.4f},   // x values
+                    new float[] {0.4f, 0.4f},   // y values
+                    new float[] {0.07f, 0.07f}, // w values
+                    new float[] {0.4f, 0.4f}    // h values
+            ),
+            new DrawTree(
+                    new float[] {1.8f, 0.6f},   // x values
+                    new float[] {0.5f, 0.5f},   // y values
+                    new float[] {0.09f, 0.09f}, // w values
+                    new float[] {0.5f, 0.5f}    // h values
+            ),
+    };
 
     private GestureDetector mGestureDetector;
     private boolean mIsPlaying = false;
@@ -79,7 +93,9 @@ public class DemoVideoView extends View {
             public void onAnimationUpdate(ValueAnimator animation) {
                 long currentPlayTime = animation.getCurrentPlayTime();
 
-                mTree1.anim.setCurrentPlayTime(currentPlayTime);
+                for (DrawObject drawObject : mDrawObjects) {
+                    drawObject.anim.setCurrentPlayTime(currentPlayTime);
+                }
                 invalidate();
 
                 invokePlayTimeUpdated(currentPlayTime);
@@ -92,9 +108,11 @@ public class DemoVideoView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawColor(Color.RED);
+        canvas.drawColor(Color.rgb(222,184,135));
 
-        mTree1.draw(canvas);
+        for (DrawObject drawObject : mDrawObjects) {
+            drawObject.draw(canvas);
+        }
 
         if (!mIsPlaying) {
             drawPlayButton(canvas);
@@ -239,7 +257,8 @@ public class DemoVideoView extends View {
         float x, y, w, h;
 
         // Private members:
-        private Paint mPaint = new Paint();
+        private Paint mLeafPaint = new Paint();
+        private Paint mTrunkPaint = new Paint();
 
         DrawTree(float[] xValues, float[] yValues, float[] wValues, float[] hValues) {
             super(new PropertyValuesHolder[] {
@@ -248,8 +267,11 @@ public class DemoVideoView extends View {
                     PropertyValuesHolder.ofFloat("w", wValues),
                     PropertyValuesHolder.ofFloat("h", hValues),
             });
-            mPaint.setColor(Color.GREEN);
-            mPaint.setStyle(Paint.Style.FILL);
+            mLeafPaint.setColor(Color.rgb(34,139,34));
+            mLeafPaint.setStyle(Paint.Style.FILL);
+
+            mTrunkPaint.setColor(Color.rgb(139,69,19));
+            mTrunkPaint.setStyle(Paint.Style.FILL);
         }
 
         @Override
@@ -258,7 +280,16 @@ public class DemoVideoView extends View {
             float cy = getHeight() * y;
             float width = getWidth() * w;
             float height = getHeight() * h;
-            canvas.drawRect(cx, cy, cx + width, cy + height, mPaint);
+
+            Path leafPath = new Path();
+            leafPath.moveTo(cx, cy - height / 2f);
+            leafPath.lineTo(cx + width / 2f, cy + height / 4f);
+            leafPath.lineTo(cx - width / 2f, cy + height / 4f);
+            leafPath.close();
+
+            canvas.drawPath(leafPath, mLeafPaint);
+
+            canvas.drawRect(cx - width / 6f, cy + height / 4f, cx + width / 6f, cy + height / 2f, mTrunkPaint);
         }
     }
 }
