@@ -1,5 +1,7 @@
 package com.perfectcorp.pcl199demo;
 
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -14,12 +16,11 @@ import android.view.View;
 
 import com.perfectcorp.pcl199demo.utility.Log;
 
+import java.lang.reflect.Field;
+
 public class DemoVideoView extends View {
-    private static final long VIDEO_DURATION = 140000;
+    private static final long VIDEO_DURATION = 30000;
     private static final float ASPECT_RATIO = 16f / 9f;
-    private GestureDetector mGestureDetector;
-    private boolean mIsPlaying = false;
-    private Paint mPlayBtnPaint = new Paint();
 
     public interface EventListener {
         void onPlayTimeUpdated(long playTimeMs);
@@ -27,6 +28,16 @@ public class DemoVideoView extends View {
 
     private EventListener mListener;
     private ValueAnimator mTimeCtrl = ValueAnimator.ofFloat(0f, 100f).setDuration(VIDEO_DURATION);
+    private DrawObject mTree1 = new DrawTree(
+            new float[] {1.0f, 0.5f},   // x values
+            new float[] {0.3f, 0.3f},   // y values
+            new float[] {0.05f, 0.05f}, // w values
+            new float[] {0.2f, 0.2f}    // h values
+    );
+
+    private GestureDetector mGestureDetector;
+    private boolean mIsPlaying = false;
+    private Paint mPlayBtnPaint = new Paint();
 
     public DemoVideoView(Context context) {
         super(context);
@@ -66,7 +77,12 @@ public class DemoVideoView extends View {
         mTimeCtrl.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
-                invokePlayTimeUpdated(animation.getCurrentPlayTime());
+                long currentPlayTime = animation.getCurrentPlayTime();
+
+                mTree1.anim.setCurrentPlayTime(currentPlayTime);
+                invalidate();
+
+                invokePlayTimeUpdated(currentPlayTime);
             }
         });
 
@@ -77,6 +93,8 @@ public class DemoVideoView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         canvas.drawColor(Color.RED);
+
+        mTree1.draw(canvas);
 
         if (!mIsPlaying) {
             drawPlayButton(canvas);
@@ -99,8 +117,7 @@ public class DemoVideoView extends View {
         theta = (float) Math.toRadians(240);
         path.lineTo((float) (cx + radius * Math.cos(theta)), (float) (cy + radius * Math.sin(theta)));
 
-        theta = (float) Math.toRadians(0);
-        path.lineTo((float) (cx + radius * Math.cos(theta)), (float) (cy + radius * Math.sin(theta)));
+        path.close();
 
         mPlayBtnPaint.setStrokeWidth(0);
         mPlayBtnPaint.setStyle(Paint.Style.FILL);
@@ -110,7 +127,6 @@ public class DemoVideoView extends View {
         mPlayBtnPaint.setStrokeWidth(radius / 8f);
         mPlayBtnPaint.setStyle(Paint.Style.STROKE);
         canvas.drawCircle(cx, cy, radius, mPlayBtnPaint);
-//        canvas.drawRect(centerX - 100, centerY - 100, centerX + 100, centerY + 100, mPlayBtnPaint);
     }
 
     @Override
@@ -137,7 +153,17 @@ public class DemoVideoView extends View {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
             mIsPlaying = !mIsPlaying;
-            Log.bear(mIsPlaying ? "playing" : "stopped");
+
+            if (mIsPlaying) {
+                if (mTimeCtrl.isStarted()) {
+                    mTimeCtrl.resume();
+                } else {
+                    mTimeCtrl.start();
+                }
+            } else {
+                mTimeCtrl.pause();
+            }
+
             invalidate();
             return true;
         }
@@ -163,17 +189,76 @@ public class DemoVideoView extends View {
         mTimeCtrl.setCurrentPlayTime(playTimeMs);
     }
 
-    private class DrawObject {
-        private ValueAnimator mAnimX;
-        private ValueAnimator mAnimY;
-        private ValueAnimator mAnimW;
-        private ValueAnimator mAnimH;
+    private abstract class DrawObject implements ValueAnimator.AnimatorUpdateListener {
+        ObjectAnimator anim;
 
-        DrawObject(ValueAnimator animX, ValueAnimator animY, ValueAnimator animW, ValueAnimator animH) {
-            mAnimX = animX;
-            mAnimY = animY;
-            mAnimW = animW;
-            mAnimH = animH;
+        DrawObject(PropertyValuesHolder[] values) {
+            anim = ObjectAnimator.ofPropertyValuesHolder(this, values).setDuration(VIDEO_DURATION);
+            anim.addUpdateListener(this);
+            anim.setCurrentPlayTime(0);
+        }
+
+        abstract void draw(Canvas canvas);
+
+        @Override
+        public void onAnimationUpdate(ValueAnimator animation) {
+            Log.bear();
+            PropertyValuesHolder[] values = animation.getValues();
+            for (PropertyValuesHolder value : values) {
+                String propName = value.getPropertyName();
+                Field field = findField(getClass(), propName);
+                if (field == null) {
+                    continue;
+                }
+                Log.bear(propName);
+
+                field.setAccessible(true);
+                try {
+                    field.set(this, animation.getAnimatedValue(propName));
+                    Log.bear(propName, field.get(this));
+                } catch (IllegalAccessException ignored) {
+                }
+            }
+        }
+
+        private Field findField(Class<?> cls, String fieldName) {
+            if (cls == null || fieldName == null) {
+                return null;
+            }
+
+            try {
+                return cls.getDeclaredField(fieldName);
+            } catch (NoSuchFieldException ignored) {
+                return findField(cls.getSuperclass(), fieldName);
+            }
+        }
+    }
+
+    private class DrawTree extends DrawObject {
+        // Direct access properties:
+        float x, y, w, h;
+
+        // Private members:
+        private Paint mPaint = new Paint();
+
+        DrawTree(float[] xValues, float[] yValues, float[] wValues, float[] hValues) {
+            super(new PropertyValuesHolder[] {
+                    PropertyValuesHolder.ofFloat("x", xValues),
+                    PropertyValuesHolder.ofFloat("y", yValues),
+                    PropertyValuesHolder.ofFloat("w", wValues),
+                    PropertyValuesHolder.ofFloat("h", hValues),
+            });
+            mPaint.setColor(Color.GREEN);
+            mPaint.setStyle(Paint.Style.FILL);
+        }
+
+        @Override
+        void draw(Canvas canvas) {
+            float cx = getWidth() * x;
+            float cy = getHeight() * y;
+            float width = getWidth() * w;
+            float height = getHeight() * h;
+            canvas.drawRect(cx, cy, cx + width, cy + height, mPaint);
         }
     }
 }

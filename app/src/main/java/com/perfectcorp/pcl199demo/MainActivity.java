@@ -20,7 +20,7 @@ public class MainActivity extends Activity {
         mVideoView.setEventListener(mVideoEventListener);
 
         mVideoProgress = (SeekBar) findViewById(R.id.video_progress);
-        mVideoProgress.setMax((int) (mVideoView.getVideoDuration() / 1000));
+        mVideoProgress.setMax((int) mVideoView.getVideoDuration());
         mVideoProgress.setOnSeekBarChangeListener(mVideoProgressChangeListener);
     }
 
@@ -35,9 +35,9 @@ public class MainActivity extends Activity {
         @Override
         public void onPlayTimeUpdated(long playTimeMs) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                mVideoProgress.setProgress((int) (playTimeMs / 1000), true);
+                mVideoProgress.setProgress((int) playTimeMs, true);
             } else {
-                mVideoProgress.setProgress((int) (playTimeMs / 1000));
+                mVideoProgress.setProgress((int) playTimeMs);
             }
         }
     };
@@ -46,7 +46,7 @@ public class MainActivity extends Activity {
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
             Log.bear(progress);
-            mVideoView.setPlayTime(progress * 1000);
+            mVideoView.setPlayTime(progress);
         }
 
         @Override
