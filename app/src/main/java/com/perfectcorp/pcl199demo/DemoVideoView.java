@@ -19,7 +19,7 @@ import com.perfectcorp.pcl199demo.utility.Log;
 import java.lang.reflect.Field;
 
 public class DemoVideoView extends View {
-    private static final long VIDEO_DURATION = 30000;
+    private static final long VIDEO_DURATION = 10000;
     private static final float ASPECT_RATIO = 16f / 9f;
 
     public interface EventListener {
@@ -220,7 +220,6 @@ public class DemoVideoView extends View {
 
         @Override
         public void onAnimationUpdate(ValueAnimator animation) {
-            Log.bear();
             PropertyValuesHolder[] values = animation.getValues();
             for (PropertyValuesHolder value : values) {
                 String propName = value.getPropertyName();
@@ -228,12 +227,10 @@ public class DemoVideoView extends View {
                 if (field == null) {
                     continue;
                 }
-                Log.bear(propName);
 
                 field.setAccessible(true);
                 try {
                     field.set(this, animation.getAnimatedValue(propName));
-                    Log.bear(propName, field.get(this));
                 } catch (IllegalAccessException ignored) {
                 }
             }

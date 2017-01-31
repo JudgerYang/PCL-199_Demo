@@ -43,20 +43,24 @@ public class MainActivity extends Activity {
     };
 
     private SeekBar.OnSeekBarChangeListener mVideoProgressChangeListener = new SeekBar.OnSeekBarChangeListener() {
+        private boolean mIsTrackingTouch = false;
+
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
             Log.bear(progress);
-            mVideoView.setPlayTime(progress);
+            if (mIsTrackingTouch) {
+                mVideoView.setPlayTime(progress);
+            }
         }
 
         @Override
         public void onStartTrackingTouch(SeekBar seekBar) {
-
+            mIsTrackingTouch = true;
         }
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-
+            mIsTrackingTouch = false;
         }
     };
 }
